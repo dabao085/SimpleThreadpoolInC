@@ -287,7 +287,6 @@ int threadpool_destroy(threadpool_t *pool, int flag)
                 }
             }
         }
-
     }while(0);
 
     //表示所有线程都已经停止,可以进行内存清理操作
