@@ -40,12 +40,12 @@
 * @brief 创建线程池对象.
 * @param thread_size 工作线程数.
 * @param queue_size   队列大小.
-* @成功是返回新建的threadpool_t对象, 失败返回NULL
+* @成功是返回新建的threadpool_t对象指针, 失败返回NULL
 */
 threadpool_t *threadpool_create(int thread_size, int queue_size)
 {
-    threadpool_t *pool;
-    int ret;
+    threadpool_t *pool = NULL;
+    int i, ret = 0;
     int err_flag = false;
 
     if(thread_size < 0 || thread_size > MAXTHREADS || queue_size < 0 || queue_size > MAXQUEUES){
@@ -61,7 +61,7 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
         }
         pool->pending_task_count = pool->head = pool->tail = pool->started = 0;
         pool->queue_size = queue_size;
-        //pool->thread_size = thread_size;
+        pool->thread_size = 0;
         pool->shutdown_flag = 0;
 
         pool->threads = (pthread_t*)malloc(sizeof(pthread_t) * thread_size);
@@ -79,7 +79,7 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
             break;
         }
 
-        for(int i = 0; i < thread_size; ++i){
+        for(i = 0; i < thread_size; ++i){
             if((ret = pthread_create(&(pool->threads[i]), NULL, threadpool_func, (void*)pool)) != 0){
                 threadpool_destroy(pool, 0);//工作线程在创建时失败，处理资源回收工作
                 return NULL;
@@ -103,12 +103,13 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
 * @brief 向threadpool添加任务.
 * @param pool 线程池指针.
 * @param function 任务实现(任务对象为函数指针, 此处没有进行封装).
-* @param argument 任务参数.
+* @param inputArgument 传递给任务的入参数.
+* @param outputArgument 传递给任务的结果.
 * @成功返回0, 失败返回错误码(错误码定义见threadpool_error_code)
 */
 int threadpool_add(threadpool_t *pool, void(*function)(void*, void*), void *inputArgument, void *outputArgument)
 {
-    int next, err_code = 0;
+    int next = 0, err_code = 0;
 
     if(pool == NULL || function == NULL){
         return threadpool_invalid;
@@ -187,6 +188,11 @@ void *threadpool_func(void *threadpool)
 
         //检测线程池是否异常止,若正常停止,顺便检查下是否有未完成的任务在队列里
         if(pool->shutdown_flag == shutdown_immediate || (pool->shutdown_flag == shutdown_graceful && pool->pending_task_count == 0)){
+            if(pool->shutdown_flag == shutdown_immediate){
+                printf("pool->shutdown_flag == shutdown_immediate\n");
+            }else if(pool->shutdown_flag == shutdown_graceful && pool->pending_task_count == 0){
+                printf("pool->shutdown_flag == shutdown_graceful && pool->pending_task_count == 0 没有新任务, 正常退出\n");
+            }
             break;
         }
 
@@ -205,10 +211,10 @@ void *threadpool_func(void *threadpool)
 
         //执行任务
         (*(task.function))(task.inputArgument, task.outputArgument);
-        printf("task done...\n");
+        //printf("task done...\n");
     }
 
-    pool->started --;//表示某个工作线程挂啦,已启动的工作线程数减1
+    pool->started --;//表示某个工作线程挂啦(或者收到退出信号后,完成了所有任务),已启动的工作线程数减1
     if(pthread_mutex_unlock(&(pool->mutex)) != 0){
         printf("threadpool_lock_failure\n");
         return NULL;
@@ -270,7 +276,7 @@ int threadpool_destroy(threadpool_t *pool, int flag)
         }
 
         //若线程池不在关闭状态中，置为关闭状态(关闭状态由flag指定)
-        pool->shutdown_flag = (pool->shutdown_flag | flag)? shutdown_graceful:shutdown_immediate;
+        pool->shutdown_flag = (flag == shutdown_graceful )? shutdown_graceful:shutdown_immediate;
 
         //唤醒所有工作线程,感觉这样写有问题,会被中断吗?拆开写比较好
         if((pthread_cond_broadcast(&pool->notify) != 0) || (pthread_mutex_unlock(&(pool->mutex)) != 0)){
@@ -279,7 +285,7 @@ int threadpool_destroy(threadpool_t *pool, int flag)
         }
 
         //若为shutdown_graceful, 等待工作线程完成所有任务后退出, 若为shutdown_immediate则直接退出
-        if(shutdown_graceful){
+        if(pool->shutdown_flag == shutdown_graceful){
             for(i = 0 ; i < pool->thread_size; ++ i){
                 if(pthread_join(pool->threads[i], NULL) != 0){
                     err_code = threadpool_lock_failure;

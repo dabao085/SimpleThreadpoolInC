@@ -40,14 +40,15 @@
 #include <pthread.h>
 
 #define MAXTHREADS 128
-#define MAXQUEUES 128
+#define MAXQUEUES 65536
 
 /**
 *  @struct threadpool_task_t
 *  @brief the work task struct
 *
 *  @var function Pointer to the function that will perform the task.
-*  @var argument Argument to be passed to the function.
+*  @var inputArgument Argument to be passed to the function.
+*  @var outputArgument Argument to be passed to the function, it will store the result of the thread after done.
 */
 typedef struct{
     void (*function)(void *, void *);

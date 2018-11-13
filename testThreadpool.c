@@ -1,34 +1,6 @@
-/*
-* Copyright (c) 2018, Leonardo Cheng <chengxiang085@gmail.com>.
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are
-* met:
-*
-*  1. Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*
-*  2. Redistributions in binary form must reproduce the above copyright
-*     notice, this list of conditions and the following disclaimer in the
-*     documentation and/or other materials provided with the distribution.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-* "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-* LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-* A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-* HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-* SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-* LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-* THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-* (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
 /**
-* @file threadpool.c
-* @brief implement of threadpool
+* @file testThreadpool.c
+* @brief 简单的线程池测试程序
 */
 
 #include "threadpool.h"
@@ -36,6 +8,7 @@
 
 int g_done = 0, g_started = 0;
 pthread_mutex_t g_lock;
+
 void testThread(void *inputArgument, void *outputArgument)
 {
     pthread_mutex_lock(&g_lock);
@@ -49,6 +22,7 @@ void testThread(void *inputArgument, void *outputArgument)
 
 int main(int argc, char **argv)
 {
+    int i;
     threadpool_t *pool;
     int inputArgument[128] = {0}, outputArgument[128] = {0};
     pthread_mutex_init(&g_lock, NULL);
@@ -68,7 +42,7 @@ int main(int argc, char **argv)
     printf("g_start: %d, g_done: %d\n", g_started, g_done);
 
     printf("result:\n");
-    for(int i = 0; i < 96; ++i){
+    for(i = 0; i < 96; ++i){
         printf("%d ", outputArgument[i]);
     }
     printf("\n");
