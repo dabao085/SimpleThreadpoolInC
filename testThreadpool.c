@@ -26,6 +26,11 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/**
+* @file threadpool.c
+* @brief implement of threadpool
+*/
+
 #include "threadpool.h"
 #include <assert.h>
 
@@ -47,7 +52,7 @@ int main(int argc, char **argv)
     threadpool_t *pool;
     int inputArgument[128] = {0}, outputArgument[128] = {0};
     pthread_mutex_init(&g_lock, NULL);
-    pool = threadpool_create(1, 96);
+    pool = threadpool_create(4, 96);
     assert(pool != NULL);
 
     printf("threadpool woker size: %d, task size: %d\n", 8, 64);
