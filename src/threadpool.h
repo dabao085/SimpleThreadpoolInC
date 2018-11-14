@@ -68,7 +68,7 @@ typedef struct{
 *  @var queue_size 队列中的任务数
 *  @var head 指向任务队列中未完成任务的head
 *  @var tail 指向任务队列中未完成任务的tail
-*  @var shutdown_flag 线程池的退出标记
+*  @var shutdown_flag 线程池的退出标记,0为未退出,1为shutdown_graceful,2为shutdown_immediate
 *  @var started 启动的工作线程数
 *  @var pending_task_count 未完成的task数
 */

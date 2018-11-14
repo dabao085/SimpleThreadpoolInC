@@ -9,14 +9,13 @@
 #define THREAD 4
 #define SIZE 64
 
-int g_started, g_done, g_left;
+int g_left;
 threadpool_t *pool[SIZE];
 pthread_mutex_t lock;
 
 void testThread(void *inputArgument, void *outputArgument)
 {
     usleep(20);
-//    printf("g_done %d\n", ++g_done);
     int *p = (int*)inputArgument;
     *p = *p + 1;
     if(*p < SIZE){
@@ -31,7 +30,6 @@ void testThread(void *inputArgument, void *outputArgument)
 int main(int argc, char **argv)
 {
     int i, j;
-    g_started = g_done = 0;
     int argument[QUEUE];
     g_left = QUEUE;
     pthread_mutex_init(&lock, NULL);
@@ -48,7 +46,7 @@ int main(int argc, char **argv)
         assert(threadpool_add(pool[0], &testThread, (void*)&argument[i], NULL) == 0);
     }
 
-    while(copy > 0){
+    while(g_left > 0){
         usleep(10);
         pthread_mutex_lock(&lock);
         g_left;

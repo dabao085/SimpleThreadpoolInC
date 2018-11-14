@@ -61,7 +61,7 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
         }
         pool->pending_task_count = pool->head = pool->tail = pool->started = 0;
         pool->queue_size = queue_size;
-        pool->thread_size = 0;
+        pool->thread_size = 0;//*
         pool->shutdown_flag = 0;
 
         pool->threads = (pthread_t*)malloc(sizeof(pthread_t) * thread_size);
@@ -214,7 +214,7 @@ void *threadpool_func(void *threadpool)
         //printf("task done...\n");
     }
 
-    pool->started --;//表示某个工作线程挂啦(或者收到退出信号后,完成了所有任务),已启动的工作线程数减1
+    pool->started --;//表示某个工作线程挂啦(或者收到退出信号后,完成了所有任务后,正常退出),已启动的工作线程数减1
     if(pthread_mutex_unlock(&(pool->mutex)) != 0){
         printf("threadpool_lock_failure\n");
         return NULL;
@@ -253,7 +253,7 @@ int threadpool_free(threadpool_t *pool)
 * @function threadpool_destroy
 * @brief 关闭线程池, 按flag选择是否等待工作线程完成任务后退出.
 * @param pool 线程池指针.
-* @param flag 0表示立即退出(shutdown_immediate), 1表示等待工作线程完成后退出(shutdown_graceful).
+* @param flag 2表示立即退出(shutdown_immediate), 1表示等待工作线程完成后退出(shutdown_graceful).
 * @成功返回0,失败返回错误码.
 */
 int threadpool_destroy(threadpool_t *pool, int flag)
@@ -275,7 +275,7 @@ int threadpool_destroy(threadpool_t *pool, int flag)
             break;
         }
 
-        //若线程池不在关闭状态中，置为关闭状态(关闭状态由flag指定)
+        //若线程池不在关闭状态中,则置为关闭状态(关闭状态由flag指定)
         pool->shutdown_flag = (flag == shutdown_graceful )? shutdown_graceful:shutdown_immediate;
 
         //唤醒所有工作线程,感觉这样写有问题,会被中断吗?拆开写比较好

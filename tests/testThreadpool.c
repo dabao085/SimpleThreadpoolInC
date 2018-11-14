@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     pool = threadpool_create(4, 96);
     assert(pool != NULL);
 
-    printf("threadpool woker size: %d, task size: %d\n", 8, 64);
+    printf("threadpool woker size: %d, task size: %d\n", 4, 96);
 
     while(threadpool_add(pool, &testThread, (void*)&inputArgument[g_started], (void*)&outputArgument[g_started]) == 0){
         pthread_mutex_lock(&g_lock);

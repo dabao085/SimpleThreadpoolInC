@@ -42,6 +42,7 @@ int main(int argc, char **argv)
     }
 
     assert(threadpool_destroy(pool, shutdown_immediate) == 0);
+    //shutdown_immediate后会残余部分任务未完成,此处检查是否有任务残留
     assert(g_left > 0);
 
     //测试graceful shutdown
@@ -60,6 +61,7 @@ int main(int argc, char **argv)
     }
 
     assert(threadpool_destroy(pool, shutdown_graceful) == 0);
+    //shutdown_graceful会等待所有未完成的任务完成,所以此时g_left应为0
     assert(g_left == 0);
 
     pthread_mutex_destroy(&lock);
