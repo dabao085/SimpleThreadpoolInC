@@ -11,6 +11,11 @@ pthread_mutex_t g_lock;
 
 void testThread(void *inputArgument, void *outputArgument)
 {
+    if(inputArgument == NULL || outputArgument == NULL){
+        printf("inputArgument or outputArgument is invalid\n");
+        return;
+    }
+
     pthread_mutex_lock(&g_lock);
     g_done++;
     printf("g_done now is : %d\n", g_done);

@@ -75,23 +75,24 @@ typedef struct{
 typedef struct{
     pthread_mutex_t mutex;
     pthread_cond_t notify;
-    pthread_t *threads;
-    threadpool_task_t *queue;
+    pthread_t *threads; // thread queue
+    threadpool_task_t *queue;   // task queue
     int thread_size;
     int queue_size;
-    int head;
-    int tail;
+    int head;   // 任务队列中未处理的第一个任务下标,线程从这个位置开始抓取任务处理
+    int tail;   // 任务队列中未处理的最后一个任务下标+1,新任务在这个位置插入到队列中
     int shutdown_flag;
     int started;
     int pending_task_count; //count
 }threadpool_t;
 
 enum {
+    threadpool_normal = 0,
     threadpool_invalid = -1,
     threadpool_lock_failure = -2,
     threadpool_shutdown = -3,
     threadpool_queue_full = -4,
-    threadpool_thread_failure = 5
+    threadpool_thread_failure = -5
 }threadpool_error_code;
 
 enum{
@@ -100,7 +101,7 @@ enum{
 }threadpool_shutdown_flag;
 
 threadpool_t *threadpool_create(int thread_size, int queue_size);
-int threadpool_add(threadpool_t *pool, void(*function)(void*, void*), void *inputArgument, void *outputArgument);
+int threadpool_add(threadpool_t *pool, void (*function)(void*, void*), void *inputArgument, void *outputArgument);
 int threadpool_free(threadpool_t *pool);
 int threadpool_destroy(threadpool_t *pool, int flag);
 void *threadpool_func(void *threadpool);

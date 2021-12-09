@@ -45,11 +45,11 @@
 threadpool_t *threadpool_create(int thread_size, int queue_size)
 {
     threadpool_t *pool = NULL;
-    int i, ret = 0;
+    int ret = 0;
     int err_flag = false;
 
     if(thread_size < 0 || thread_size > MAXTHREADS || queue_size < 0 || queue_size > MAXQUEUES){
-        printf("argument is not valiable\n");
+        printf("argument is not available\n");
         return NULL;    
     }
 
@@ -59,6 +59,8 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
             printf("malloc threadpool_t error\n");
             return NULL;
         }
+
+        // initialize
         pool->pending_task_count = pool->head = pool->tail = pool->started = 0;
         pool->queue_size = queue_size;
         pool->thread_size = 0;//*
@@ -74,12 +76,12 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
         }
 
         if(pthread_mutex_init(&pool->mutex, NULL) != 0 || pthread_cond_init(&pool->notify, NULL) != 0){
-            printf("threadpool lock failure\n");
+            printf("mutex init or condition init failed\n");
             err_flag = true;
             break;
         }
 
-        for(i = 0; i < thread_size; ++i){
+        for(int i = 0; i < thread_size; ++i){
             if((ret = pthread_create(&(pool->threads[i]), NULL, threadpool_func, (void*)pool)) != 0){
                 threadpool_destroy(pool, 0);//工作线程在创建时失败，处理资源回收工作
                 return NULL;
@@ -107,7 +109,7 @@ threadpool_t *threadpool_create(int thread_size, int queue_size)
 * @param outputArgument 传递给任务的结果.
 * @成功返回0, 失败返回错误码(错误码定义见threadpool_error_code)
 */
-int threadpool_add(threadpool_t *pool, void(*function)(void*, void*), void *inputArgument, void *outputArgument)
+int threadpool_add(threadpool_t *pool, void (*function)(void*, void*), void *inputArgument, void *outputArgument)
 {
     int next = 0, err_code = 0;
 
@@ -122,7 +124,7 @@ int threadpool_add(threadpool_t *pool, void(*function)(void*, void*), void *inpu
     do{
         next = (pool->tail + 1) % pool->queue_size;
 
-        //队列满了吗?
+        //队列满了吗? 如果队列已满且都是未完成的任务, 就无法添加新的任务了。
         if(pool->pending_task_count == pool->queue_size){
             err_code = threadpool_queue_full;
             break;
@@ -152,6 +154,7 @@ int threadpool_add(threadpool_t *pool, void(*function)(void*, void*), void *inpu
     if(pthread_mutex_unlock(&pool->mutex) != 0){
         err_code = threadpool_lock_failure; //会遮盖上面已有的err_code,必然只能取其一,因为无法返回两个err_code
     }
+
     return err_code;
 }
 
@@ -219,6 +222,7 @@ void *threadpool_func(void *threadpool)
         printf("threadpool_lock_failure\n");
         return NULL;
     }
+
     pthread_exit(NULL);
     return NULL;
 }
@@ -240,13 +244,15 @@ int threadpool_free(threadpool_t *pool)
         free(pool->threads);
         free(pool->queue);
 
-        //尝试lock一下,检查mutex是否正确初始化
+        //尝试lock一下,检查mutex是否正确初始化。对未初始化的mutex加锁lock有问题吗？
         pthread_mutex_lock(&(pool->mutex));
+        //unlock一下,否则mutex_destroy行为未定义
+        pthread_mutex_unlock(&(pool->mutex));
         pthread_mutex_destroy(&(pool->mutex));
         pthread_cond_destroy(&(pool->notify));
     }
     free(pool);
-    return 0;
+    return threadpool_normal;
 }
 
 /**
